@@ -75,6 +75,11 @@
         </select>
         <input type="submit">
     </form>
+    <form id="filter-search" data-bind="visible: listVisable">
+        <input id="search" type="text" placeholder="Search">
+        <input id="distance" type="text" placeholder="Max-Distance (feet)">
+        <input type="submit">
+    </form>
     <div id="map-canvas" data-bind="visible: mapVisable"></div>
     <div id="map-failed" data-bind="visible: mapFailed">
         <h2>Failed to Load the Map</h2>
@@ -82,7 +87,7 @@
     <div id="locations" data-bind="visible: listVisable">
         <h3>List of locations on map</h3>
         <ul data-bind="foreach: listData">
-            <li data-bind="text:formattedLi, visible:$data.isVisable()"></li>
+            <li data-bind="text:formattedLi, visible:$data.leVisable"></li>
         </ul>
     </div>
     <div id="locations-failed" data-bind="visible: locsFailed">

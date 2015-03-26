@@ -8,16 +8,22 @@ var locationArray = [];
 
 
 //name, address, topCuisine, filters.distance, filters.cuisine
+
+/*
+ *  List Element class. Used to create objects in the listData ko.observablearray
+ */
 function ListElement(name, address, topCuisine, distance, allCuisine) {
     this.formattedLi = name + " - " + address + " - " + topCuisine;
     this.name = name;
     this.distance = distance;
     this.cuisines = allCuisine;
+    this.leVisable = ko.observable(true); //USE FUNC TO SET THIS WHEN STUFF CHANGES
 }
 
-ListElement.prototype.isVisable = function() {
-    //TODO: add logic to see if we should set elem visible
-    return true;
+ListElement.prototype.changeVisability = function() {
+    if(this.name.length > 5) {
+        this.leVisable(false);
+    }
 }
 
 
@@ -43,7 +49,91 @@ var AppViewModel = function() {
     this.listVisable = ko.computed(function() {
         return this.listData().length > 0;
     }, this);
+
+    this.resultConditions = {
+        "search": '',
+        "distanceFilter" : ''
+    };
 };
+
+//Update the list and map when a user submits a filter/search
+AppViewModel.prototype.userFilter = function() {
+    var currentListElem;
+    var currentMarkerElem;
+    var search = this.resultConditions.search.toLowerCase();
+    var distance = this.resultConditions.distanceFilter;
+    var distanceVal = Number(distance);
+    console.log(this.listData());
+    for (var entry in this.listData()) {
+
+        //Same number of entries in both
+        currentListElem = this.listData()[entry];
+        currentMarkerElem = this.markersHelper[entry];
+
+        //Categories both empty
+        if (search === '' && distance === '') {
+            //List element will show up
+            currentListElem.leVisable(true);
+            if (!currentMarkerElem.displayed) {
+                currentMarkerElem.displayed = true;
+                currentMarkerElem.marker.setMap(this.map());
+            }
+            //No search, only distance filter
+        } else if (search === '') {
+            if (currentListElem.distance > distanceVal) {
+                currentListElem.leVisable(false);
+                if (currentMarkerElem.displayed) {
+                    currentMarkerElem.displayed = false;
+                    currentMarkerElem.marker.setMap(null);
+                }
+            } else {
+                currentListElem.leVisable(true);
+                if (!currentMarkerElem.displayed) {
+                    currentMarkerElem.displayed = true;
+                    currentMarkerElem.marker.setMap(this.map());
+                }
+            }
+
+          //No distance only search
+        } else if (distance === '') {
+            if ($.inArray(search, currentListElem.cuisine) < 0 &&
+                currentListElem.name.toLowerCase() != search) {
+                currentListElem.leVisable(false);
+                if (currentMarkerElem.displayed) {
+                    currentMarkerElem.displayed = false;
+                    currentMarkerElem.marker.setMap(null);
+                }
+            } else {
+                currentListElem.leVisable(true);
+                if (!currentMarkerElem.displayed) {
+                    currentMarkerElem.displayed = true;
+                    currentMarkerElem.marker.setMap(this.map());
+                }
+            }
+
+          //Both distance filter and search
+        } else {
+            if (($.inArray(search, currentListElem.cuisine) < 0 &&
+                currentListElem.name.toLowerCase() != search) ||
+                currentListElem.distance > distanceVal) {
+                currentListElem.leVisable(false);
+                if (currentMarkerElem.displayed) {
+                    currentMarkerElem.displayed = false;
+                    currentMarkerElem.marker.setMap(null);
+                }
+            } else {
+                currentListElem.leVisable(true);
+                if (!currentMarkerElem.displayed) {
+                    currentMarkerElem.displayed = true;
+                    currentMarkerElem.marker.setMap(this.map());
+                }
+            }
+
+        }
+    }
+}
+
+
 
 var viewModelHandle = new AppViewModel();
 ko.applyBindings(viewModelHandle);
@@ -79,61 +169,71 @@ function loadData(formattedAddress) {
 
         console.log(urlFactual);
 
-        jQuery.getJSON(urlFactual,function(result) {
+        loadRestaurantData(urlFactual);
 
-            console.log(result);
-            console.log(result.response.data);
-
-            var dataArray = result.response.data;
-
-            console.log(dataArray);
-
-            for(var index in dataArray) {
-                var locLatLong = new google.maps.LatLng(dataArray[index].latitude, dataArray[index].longitude);
-                console.log(locLatLong);
-                var marker = new google.maps.Marker({
-                    position: locLatLong,
-                    map: viewModelHandle.map(),
-                    title: dataArray[index].name
-                });
-                var address = dataArray[index].address + ", " + dataArray[index].locality;
-                //Top in list of cuisine items
-                if (dataArray[index].cuisine.length > 0) {
-                    var topCuisine = dataArray[index].cuisine[0];
-                } else {
-                    topCuisine = "Cuisine Unknown";
-                }
-
-
-                var infowindow = new google.maps.InfoWindow({
-                    content: marker.title + '\n' + address + '\n' + topCuisine
-                });
-
-                var filters = {};
-                //3.28 feet per meter api data in meters
-                filters.distance =  dataArray[index].$distance * 3.28;
-                filters.name = marker.title;
-                filters.cuisine = dataArray[index].cuisine;
-
-                viewModelHandle.markersHelper.push(new MarkerHelperElem(marker, filters));
-
-                viewModelHandle.listData.push(
-                    new ListElement(filters.name, address, topCuisine, filters.distance, filters.cuisine));
-
-                bindDataToMarker(viewModelHandle.map(), marker, infowindow);
-
-            }
-
-             /*
-            var marker = new google.maps.Marker({
-                position: myLatlng,
-                map: map,
-                title:"Hello World!"
-            });
-            */
-        });
+    }).error(function(event) {
+        viewModelHandle.locsFailed(true);
+        viewModelHandle.mapFailed(true);
+        alert( "Load map failed" );
+        event.preventDefault();
     });
 }
+
+function loadRestaurantData(urlFactual) {
+    jQuery.getJSON(urlFactual,function(result) {
+
+        console.log(result);
+        console.log(result.response.data);
+
+        var dataArray = result.response.data;
+
+        console.log(dataArray);
+
+        for(var index in dataArray) {
+            var locLatLong = new google.maps.LatLng(dataArray[index].latitude, dataArray[index].longitude);
+            console.log(locLatLong);
+            var marker = new google.maps.Marker({
+                position: locLatLong,
+                map: viewModelHandle.map(),
+                title: dataArray[index].name
+            });
+            var address = dataArray[index].address + ", " + dataArray[index].locality;
+            //Top in list of cuisine items
+            if (dataArray[index].cuisine.length > 0) {
+                var topCuisine = dataArray[index].cuisine[0];
+            } else {
+                topCuisine = "Cuisine Unknown";
+            }
+
+
+            var infowindow = new google.maps.InfoWindow({
+                content: marker.title + '\n' + address + '\n' + topCuisine
+            });
+
+            var filters = {};
+            //3.28 feet per meter api data in meters
+            filters.distance =  dataArray[index].$distance * 3.28;
+            filters.name = marker.title;
+            filters.cuisine = dataArray[index].cuisine;
+
+            viewModelHandle.markersHelper.push(new MarkerHelperElem(marker, filters));
+
+            viewModelHandle.listData.push(
+                new ListElement(filters.name, address, topCuisine, filters.distance, filters.cuisine));
+
+            bindDataToMarker(viewModelHandle.map(), marker, infowindow);
+
+        }
+
+    }).error(function(event) {
+        viewModelHandle.locsFailed(true);
+        alert( "Load locs failed" );
+        event.preventDefault();
+    });
+}
+
+
+
 
 function initialize(lat, long) {
     var mapOptions = {
@@ -144,28 +244,48 @@ function initialize(lat, long) {
         mapOptions);
 }
 
-jQuery("#target").submit(function( event ) {
-    alert( "Handler for .submit() called." );
-    event.preventDefault();
-    var $address = jQuery('#address');
-    var $city = jQuery('#city');
-    var $state =  jQuery('#state');
-    var address = $address.val();
-    var city = $city.val();
-    var state = $state.val();
-    $address.val('');
-    $city.val('');
-    $state.val('State');
 
-    address = stringFormatHelper(address);
-    city = stringFormatHelper(city);
-    state = stringFormatHelper(state);
-    var formattedAddress = address +"+" + city + "+" + state;
-    loadData(formattedAddress);
-});
+function submitEntered() {
+    jQuery("#target").submit(function (event) {
+        alert("Handler for .submit() called.");
+        event.preventDefault();
+        var $address = jQuery('#address');
+        var $city = jQuery('#city');
+        var $state = jQuery('#state');
+        var address = $address.val();
+        var city = $city.val();
+        var state = $state.val();
+        $address.val('');
+        $city.val('');
+        $state.val('State');
+
+        address = stringFormatHelper(address);
+        city = stringFormatHelper(city);
+        state = stringFormatHelper(state);
+        var formattedAddress = address + "+" + city + "+" + state;
+        loadData(formattedAddress);
+    });
+}
+
+function filterEntered() {
+    jQuery("#filter-search").submit(function (event) {
+        alert("Handler for .submit() called for filter.");
+        event.preventDefault();
+        var search = $('#search').val();
+        var distance = $('#distance').val();
+
+        viewModelHandle.resultConditions.search = search;
+        viewModelHandle.resultConditions.distanceFilter = distance;
+        viewModelHandle.userFilter();
+    });
+}
 
 
-stringFormatHelper = function(str) {
+submitEntered();
+filterEntered();
+
+
+function stringFormatHelper(str) {
     var split = str.split(' ');
     var accumulator = '';
     for(var sub in split) {
@@ -177,4 +297,4 @@ stringFormatHelper = function(str) {
         }
     }
     return accumulator;
-}
+};
