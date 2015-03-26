@@ -16,7 +16,7 @@ function ListElement(name, address, topCuisine, distance, allCuisine) {
     this.formattedLi = name + " - " + address + " - " + topCuisine;
     this.name = name;
     this.distance = distance;
-    this.cuisines = allCuisine;
+    this.cuisine = allCuisine;
     this.leVisable = ko.observable(true); //USE FUNC TO SET THIS WHEN STUFF CHANGES
 }
 
@@ -96,6 +96,9 @@ AppViewModel.prototype.userFilter = function() {
 
           //No distance only search
         } else if (distance === '') {
+            console.log(currentListElem.cuisine);
+            console.log(search);
+            console.log($.inArray(search, currentListElem.cuisine));
             if ($.inArray(search, currentListElem.cuisine) < 0 &&
                 currentListElem.name.toLowerCase() != search) {
                 currentListElem.leVisable(false);
@@ -113,6 +116,9 @@ AppViewModel.prototype.userFilter = function() {
 
           //Both distance filter and search
         } else {
+            console.log(currentListElem.cuisine);
+            console.log(search);
+            console.log($.inArray(search, currentListElem.cuisine));
             if (($.inArray(search, currentListElem.cuisine) < 0 &&
                 currentListElem.name.toLowerCase() != search) ||
                 currentListElem.distance > distanceVal) {
@@ -219,13 +225,13 @@ function loadRestaurantData(urlFactual) {
             viewModelHandle.markersHelper.push(new MarkerHelperElem(marker, filters));
 
             viewModelHandle.listData.push(
-                new ListElement(filters.name, address, topCuisine, filters.distance, filters.cuisine));
+                new ListElement(filters.name, address, topCuisine, filters.distance, lowerCaseArray(filters.cuisine)));
 
             bindDataToMarker(viewModelHandle.map(), marker, infowindow);
 
-        }
+    }
 
-    }).error(function(event) {
+}).error(function(event) {
         viewModelHandle.locsFailed(true);
         alert( "Load locs failed" );
         event.preventDefault();
@@ -233,6 +239,12 @@ function loadRestaurantData(urlFactual) {
 }
 
 
+function lowerCaseArray(array) {
+    for (var str in array) {
+        array[str] = array[str].toLowerCase();
+    }
+    return array;
+}
 
 
 function initialize(lat, long) {
