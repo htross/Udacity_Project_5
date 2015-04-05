@@ -83,7 +83,7 @@ AppViewModel.prototype.userFilter = function() {
                 }
             }
 
-          //No distance only search
+            //No distance only search
         } else if (distance === '') {
             if ($.inArray(search, currentListElem.cuisine) < 0 &&
                 currentListElem.name.toLowerCase() != search) {
@@ -100,7 +100,7 @@ AppViewModel.prototype.userFilter = function() {
                 }
             }
 
-          //Both distance filter and search
+            //Both distance filter and search
         } else {
             if (($.inArray(search, currentListElem.cuisine) < 0 &&
                 currentListElem.name.toLowerCase() != search) ||
@@ -120,7 +120,7 @@ AppViewModel.prototype.userFilter = function() {
 
         }
     }
-}
+};
 
 
 
@@ -146,7 +146,7 @@ function loadData(formattedAddress) {
     var googleGeocodeUrl = 'https://maps.googleapis.com/maps/api/geocode/json?address=%addr%&key=' + GOOGLEKEY;
     googleGeocodeUrl = googleGeocodeUrl.replace('%addr%', formattedAddress);
     var urlFactual = "http://api.v3.factual.com/t/restaurants-us?geo={%22$circle%22:{%22$center%22:[%lat%,%long%],"+
-                "%22$meters%22:%205000}}&limit=50&KEY=" + FACTUALKEY;
+        "%22$meters%22:%205000}}&limit=50&KEY=" + FACTUALKEY;
 
     jQuery.getJSON(googleGeocodeUrl, function(data) {
         var lat = data.results[0].geometry.location.lat;
@@ -187,10 +187,11 @@ function loadRestaurantData(urlFactual) {
             });
             var address = dataArray[index].address + ", " + dataArray[index].locality;
             //Top in list of cuisine items
+
+            var topCuisine = "Cuisine Unknown";
+
             if (dataArray[index].cuisine != null && dataArray[index].cuisine.length > 0) {
-                var topCuisine = dataArray[index].cuisine[0];
-            } else {
-                topCuisine = "Cuisine Unknown";
+                topCuisine = dataArray[index].cuisine[0];
             }
 
             var infoWindowContent = '<div><h1>title</h1><h3>address</h3><h4>cuisine</h4></div>';
@@ -257,6 +258,9 @@ function submitEntered() {
         $('#distance').val('');
         $('#search').val('');
 
+        //Reset in case two addresses used
+        viewModelHandle.markersHelper = [];
+
         address = stringFormatHelper(address);
         city = stringFormatHelper(city);
         state = stringFormatHelper(state);
@@ -298,5 +302,4 @@ function stringFormatHelper(str) {
 
 submitEntered();
 filterEntered();
-
 
