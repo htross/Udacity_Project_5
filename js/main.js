@@ -44,6 +44,11 @@ var AppViewModel = function() {
         "search": '',
         "distanceFilter" : ''
     };
+    this.address = ko.observable('');
+    this.city = ko.observable('');
+    this.state = ko.observable('State');
+    this.search = ko.observable('');
+    this.distance = ko.observable('');
 };
 
 //Update the list and map when a user submits a filter/search
@@ -152,12 +157,14 @@ function loadData(formattedAddress) {
         var lat = data.results[0].geometry.location.lat;
         var long = data.results[0].geometry.location.lng;
         viewModelHandle.map(initialize(lat, long));
-        var homeMarker =new google.maps.Marker({
+        var homeMarker = new google.maps.Marker({
             position: new google.maps.LatLng(lat, long),
             map: viewModelHandle.map(),
             icon: 'images/homeIcon.gif'});
+        var bounds = new google.maps.LatLngBounds();
+        bounds.extend(homeMarker.getPosition());
         urlFactual = urlFactual.replace('%lat%', lat).replace('%long%', long);
-        loadRestaurantData(urlFactual);
+        loadRestaurantData(urlFactual, bounds);
 
     }).error(function(event) {
         viewModelHandle.locsFailed(true);
@@ -170,7 +177,7 @@ function loadData(formattedAddress) {
  * Loads restaurant data from factual
  */
 
-function loadRestaurantData(urlFactual) {
+function loadRestaurantData(urlFactual, bounds) {
 
     //Set array to empty in case user enters a different address
     viewModelHandle.listData([]);
@@ -185,6 +192,7 @@ function loadRestaurantData(urlFactual) {
                 map: viewModelHandle.map(),
                 title: dataArray[index].name
             });
+            bounds.extend(marker.getPosition());
             var address = dataArray[index].address + ", " + dataArray[index].locality;
             //Top in list of cuisine items
 
@@ -211,6 +219,8 @@ function loadRestaurantData(urlFactual) {
                 new ListElement(filters.name, address, topCuisine, filters.distance, lowerCaseArray(filters.cuisine)));
             bindDataToMarker(viewModelHandle.map(), marker, infowindow);
         }
+
+        viewModelHandle.map().fitBounds(bounds);
 
     }).error(function(event) {
         viewModelHandle.locsFailed(true);
