@@ -127,6 +127,33 @@ AppViewModel.prototype.userFilter = function() {
     }
 };
 
+AppViewModel.prototype.submitEntered = function() {
+    var address = this.address();
+    var city = this.city();
+    var state = this.state();
+    this.address('');
+    this.city('');
+    this.state('State');
+
+    //Set empty in case user using multiple addresses
+    this.distance('');
+    this.search('');
+
+    //Reset in case two addresses used
+    this.markersHelper = [];
+
+    address = stringFormatHelper(address);
+    city = stringFormatHelper(city);
+    state = stringFormatHelper(state);
+    var formattedAddress = address + "+" + city + "+" + state;
+    loadData(formattedAddress);
+};
+
+AppViewModel.prototype.filterEntered = function() {
+    this.resultConditions.search = this.search();
+    this.resultConditions.distanceFilter = this.distance();
+    this.userFilter();
+};
 
 
 var viewModelHandle = new AppViewModel();
@@ -249,37 +276,6 @@ function initialize(lat, long) {
 
 
 /*
- * A function which encapsulates a jQuery action listner for the address submit button
- */
-function submitEntered() {
-    $("#target").submit(function (event) {
-        event.preventDefault();
-        var $address = $('#address');
-        var $city = $('#city');
-        var $state = $('#state');
-        var address = $address.val();
-        var city = $city.val();
-        var state = $state.val();
-        $address.val('');
-        $city.val('');
-        $state.val('State');
-
-        //Set empty in case user using multiple addresses
-        $('#distance').val('');
-        $('#search').val('');
-
-        //Reset in case two addresses used
-        viewModelHandle.markersHelper = [];
-
-        address = stringFormatHelper(address);
-        city = stringFormatHelper(city);
-        state = stringFormatHelper(state);
-        var formattedAddress = address + "+" + city + "+" + state;
-        loadData(formattedAddress);
-    });
-}
-
-/*
  * A function which encapsulates a jQuery action listner for the filter/search submit button
  */
 function filterEntered() {
@@ -308,8 +304,3 @@ function stringFormatHelper(str) {
     }
     return accumulator;
 }
-
-
-submitEntered();
-filterEntered();
-

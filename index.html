@@ -16,10 +16,10 @@
     </script>
 </head>
 <body>
-    <form id="target">
-        <input id="address" type="text" placeholder="Address">
-        <input id="city" type="text" placeholder="City">
-        <select id="state" name="state" size="1">
+    <form id="target" data-bind="submit: submitEntered">
+        <input id="address" type="text" data-bind="value: address" placeholder="Address">
+        <input id="city" type="text" data-bind="value: city" placeholder="City">
+        <select id="state" name="state" data-bind="value: state" size="1">
             <option value="State">State</option>
             <option value="AK">AK</option>
             <option value="AL">AL</option>
@@ -75,9 +75,9 @@
         </select>
         <input type="submit">
     </form>
-    <form id="filter-search" data-bind="visible: listVisable">
-        <input id="search" type="text" placeholder="Search by Name or Cuisine">
-        <input id="distance" type="text" placeholder="Max-Distance (feet)">
+    <form id="filter-search" data-bind="visible: listVisable, submit: filterEntered">
+        <input id="search" type="text" data-bind="value: search" placeholder="Search by Name or Cuisine">
+        <input id="distance" type="text" data-bind="value: distance" placeholder="Max-Distance (feet)">
         <input type="submit">
     </form>
     <div id="map-canvas" data-bind="visible: mapVisable"></div>
